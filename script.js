@@ -2,25 +2,25 @@
  * script.js - entry point
  * Wires the screens together. All the real work lives in js/*.js modules:
  *
- *   trig.js        exact trig values          questions.js   validated question banks
- *   engine.js      quiz rules (no DOM)        game.js        quiz screen
- *   learn.js       interactive lessons        levels.js      level selection
- *   results.js     results screen             ui.js          screens, dialogs, toasts
- *   motion.js      GSAP helpers               fx.js          particles + confetti
- *   background.js  Three.js + floating symbols
+ *   trig.js        exact trig values          puzzles.js     game rules and maths (no DOM)
+ *   content.js     worlds, missions, lessons  boards.js      SVG boards: cannon, bay, circle, boss
+ *   map.js         adventure path             play.js        mission screen
+ *   results.js     results screen             learn.js       free-play diagrams
+ *   ui.js          screens, dialogs, toasts   motion.js      GSAP helpers
+ *   fx.js          particles + confetti       background.js  Three.js + floating symbols
  *   storage.js     localStorage               audio.js       Web Audio sounds
  */
 
-import { validateAllQuestions } from './js/questions.js';
-import { getProgress, getSetting, setSetting } from './js/storage.js';
+import { NODES } from './js/content.js';
+import { getSetting, getStreakCount, getTotalStars, getXp, isNodeDone, setSetting } from './js/storage.js';
 import { setMuted, sounds, unlockAudio } from './js/audio.js';
 import { initFx } from './js/fx.js';
 import { initBackground, setBackgroundEnabled, startSymbols } from './js/background.js';
 import { canAnimate, enterScreen, floatElements, prefersReducedMotion, stopTweens } from './js/motion.js';
 import { getCurrentScreen, initDialogs, openDialog, showScreen } from './js/ui.js';
 import { initLearn } from './js/learn.js';
-import { initLevels } from './js/levels.js';
-import { initGame, openPause, startLevel } from './js/game.js';
+import { initMap } from './js/map.js';
+import { initPlay, requestExit, startNode } from './js/play.js';
 import { initResults, showResults } from './js/results.js';
 import { toRadians } from './js/trig.js';
 
@@ -76,12 +76,18 @@ function initSettings() {
 /* -------------------------------------------------------------- welcome */
 
 function updateWelcomeProgress() {
-  const progress = getProgress();
-  const stars = Object.values(progress.best).reduce((sum, entry) => sum + entry.stars, 0);
+  const done = NODES.filter((node) => isNodeDone(node.id)).length;
+  const start = byId('btn-start');
+  if (done === 0) {
+    byId('welcome-progress').textContent = 'Your progress is saved automatically on this device.';
+    start.textContent = 'Start Adventure';
+    return;
+  }
+  const streak = getStreakCount();
   byId('welcome-progress').textContent =
-    progress.unlockedLevel > 1 || stars > 0
-      ? `Welcome back! Levels unlocked: ${progress.unlockedLevel} of 3 · Stars collected: ${stars} of 9.`
-      : 'Your progress is saved automatically on this device.';
+    `Welcome back! Missions complete: ${done} of ${NODES.length} · ${getXp()} XP · ${getTotalStars()} stars` +
+    (streak > 1 ? ` · ${streak}-day streak` : '') + '.';
+  start.textContent = done === NODES.length ? 'Open the map' : 'Continue Adventure';
 }
 
 /** The decorative unit circle on the welcome screen: a radius that keeps turning. */
@@ -138,19 +144,14 @@ function initHeroOrbit() {
 /* ------------------------------------------------------------------ boot */
 
 function init() {
-  // Self-check: prints to the console only (see also `npm test`).
-  const report = validateAllQuestions();
-  if (report.ok) console.info('Question bank verified:', report.counts);
-  else console.error('Question bank problems:\n' + report.errors.join('\n'));
-
   initSettings();
   initFx();
   initDialogs();
   initBackground();
   initLearn();
-  initLevels({ onStart: startLevel, onProgressChange: updateWelcomeProgress });
-  initGame({ onFinish: showResults });
-  initResults({ onReplay: startLevel, onNextLevel: startLevel });
+  initMap({ onStart: startNode, onProgressChange: updateWelcomeProgress });
+  initPlay({ onFinish: showResults });
+  initResults({ onReplay: startNode });
 
   document.body.classList.toggle('no-effects', !getSetting('effects'));
   startFloatingCards();
@@ -164,7 +165,7 @@ function init() {
 
   byId('btn-start').addEventListener('click', () => {
     sounds.click();
-    showScreen('levels');
+    showScreen('map');
   });
   byId('btn-learn').addEventListener('click', () => {
     sounds.click();
@@ -183,10 +184,10 @@ function init() {
     showScreen(target.dataset.nav);
   });
 
-  // The logo: from the quiz it opens the pause menu (so progress is never lost by accident).
+  // The logo: during a mission it asks first (so progress is never lost by accident).
   byId('brand-home').addEventListener('click', () => {
     sounds.click();
-    if (getCurrentScreen() === 'game') openPause();
+    if (getCurrentScreen() === 'play') requestExit();
     else showScreen('welcome');
   });
 

@@ -7,9 +7,9 @@ import { enterScreen, leaveScreen, modalIn, canAnimate } from './motion.js';
 
 const TITLES = {
   welcome: 'Trigonometry Adventure',
-  learn: 'Learn Trigonometry · Trigonometry Adventure',
-  levels: 'Choose a Level · Trigonometry Adventure',
-  game: 'Quiz · Trigonometry Adventure',
+  learn: 'Playground · Trigonometry Adventure',
+  map: 'Adventure Map · Trigonometry Adventure',
+  play: 'Mission · Trigonometry Adventure',
   results: 'Results · Trigonometry Adventure',
 };
 

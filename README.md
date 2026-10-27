@@ -1,78 +1,80 @@
 # TRIGONOMETRY ADVENTURE
 
-An interactive educational arcade game that teaches sine, cosine, tangent, right triangles, SOH CAH TOA and the unit circle.
-Built for the course **Educational Technologies and Learning Systems**.
+A game that teaches sine, cosine and tangent by **playing**, not by testing. Fire a crystal cannon, guide ships to a lighthouse and battle bosses with the unit circle. A Duolingo-style path leads from a short lesson to games to a finale in each world, with hearts, stars, XP and day streaks.
+Built for the course **Educational Technologies and Learning Systems**. Written for complete beginners: every world starts with a hands-on lesson.
 
-Tech: HTML5, CSS3, JavaScript (ES modules), GSAP, Three.js, KaTeX, SVG/Canvas, localStorage. No backend, no API keys.
+Tech: HTML5, CSS3, JavaScript (ES modules), GSAP, Three.js, KaTeX, SVG, localStorage. No backend, no API keys.
 
 ## Run it in VS Code (Live Server)
 
 1. Install **Visual Studio Code** and the extension **Live Server** (by Ritwick Dey).
-2. Open the project folder: `File > Open Folder...` and choose `trigonometry-adventure`.
-3. Right-click `index.html` and choose **Open with Live Server** (or click **Go Live** in the status bar).
+2. Open the project folder: `File > Open Folder...`.
+3. Right-click `index.html` and choose **Open with Live Server** (or click **Go Live**).
 4. The game opens at `http://127.0.0.1:5500`.
 
 Notes:
-- Use Live Server (or any local web server). Opening `index.html` by double-click does **not** work, because browsers block ES modules on `file://`.
-- GSAP, KaTeX, Three.js and the Google Fonts load from CDNs, so connect to the internet once. If a library fails to load, the game still works: animations are skipped, math is shown as plain text and the CSS background replaces the 3D scene.
-- Any other server works too, for example `python -m http.server` and then open `http://localhost:8000`.
+- Use Live Server or any local web server (`python -m http.server`, then open `http://localhost:8000`). Double-clicking `index.html` does **not** work because browsers block ES modules on `file://`.
+- GSAP, KaTeX, Three.js and the fonts load from CDNs. If one fails, the game still works: animations are skipped, math appears as plain text and a CSS background replaces the 3D scene.
 
-## How to play
+## The adventure
 
-- 3 levels, 10 questions each, 4 answers, 20 seconds per question, 3 hearts.
-- Correct: +10 points. Wrong or out of time: lose a heart and see the explanation.
-- 0 hearts = Game Over. Finish with 70% or more to unlock the next level. Stars: 70% = 1, 80% = 2, 90% = 3.
-- Keyboard: `1`-`4` answer, `Enter` next question, `Esc` closes dialogs. The Pause button stops the clock.
+12 missions on a linear path. Each mission unlocks after the previous one.
 
-| Level | Difficulty | Topics |
-|-------|------------|--------|
-| 1 | Easy | sin, cos, tan of 0°, 30°, 45°, 60°, 90° (tan 90° is undefined) |
-| 2 | Medium | identities, complementary angles, right-triangle calculations |
-| 3 | Hard | quadrants, unit circle values, radians, reference angles, simple equations |
+| World | Mission | What you do | Maths |
+|-------|---------|-------------|-------|
+| **Cannon Cove** | Lesson | Move angle and power sliders and watch the bolt's triangle | across = power·cos θ, up = power·sin θ |
+| | First shots | Turn the cannon to hit crystals | sin θ = up ÷ power, cos θ = across ÷ power |
+| | Power up | The angle is fixed: choose the power | power = up ÷ sin θ |
+| | Crystal storm | Finale: hidden crystals, angle and power | all of the above |
+| **Lighthouse Bay** | Lesson | Move a ship, name the sides, meet SOH CAH TOA | opposite, adjacent, hypotenuse |
+| | Spot the ship | Pick the right ratio, then slide the ship or tower | tan |
+| | Ropes and beams | Same, with the hypotenuse | sin, cos |
+| | Storm watch | Finale: any side, or find the angle | choosing sin / cos / tan |
+| **Boss Realm** | Lesson | Explore the unit circle (drag the point) | cos = x, sin = y, tan = sin ÷ cos |
+| | Gobbo the Goblin | Break shields with sin / cos spells | special angles 0°–90° |
+| | Wisp the Wraith | Shields need tan too | tan, undefined at 90° |
+| | Zeroth the Dragon | Negative shields, angles to 360° | quadrants, signs |
 
-## Learning screen
+Rules: 3 hearts per game, a mistake costs one, out of hearts means try again (no penalty). Stars = hearts left at the end. XP for every mission; playing on consecutive days builds the day streak. The **Hint** and **Cheat sheet** buttons are always free. The old quiz is gone; the **Playground** keeps the free-play diagrams (triangle, SOH CAH TOA, unit circle with waves, special-angles table).
 
-Four interactive lessons: right triangle with angle slider, SOH CAH TOA highlighter, unit circle (rotating radius, angle slider, sine/cosine projections, wave graph, live values, auto-rotate) and a special-angles table.
+Keyboard: sliders use the arrow keys (or the − / + buttons), `Enter` presses the main button, `Esc` closes dialogs.
 
 ## Project structure
 
 ```
-index.html        page structure (all screens and dialogs)
-style.css         design system, glassmorphism, responsive layout, reduced motion
+index.html        page structure (screens and dialogs)
+style.css         design system, glass UI, playground
+play.css          adventure map, mission screen, SVG boards
 script.js         entry point
 js/
   trig.js         exact trig values and helpers
-  questions.js    question banks (21 / 25 / 40 questions) + self-verification
-  engine.js       quiz rules as a pure state machine (no DOM)
-  game.js         quiz screen: timer, hearts, score, feedback, pause
-  learn.js        interactive lessons (SVG)
-  levels.js       level selection
-  results.js      results screen
-  ui.js           screen manager, dialogs, toasts
-  motion.js       GSAP helpers (with graceful fallbacks)
-  fx.js           particle bursts and confetti (canvas)
-  background.js   Three.js scene + floating math symbols
-  storage.js      localStorage (progress, best scores, settings)
-  audio.js        Web Audio sound effects (no audio files)
-  mathfmt.js      KaTeX rendering with plain-text fallback
+  puzzles.js      game rules and maths for cannon, bay and boss rounds (no DOM)
+  content.js      worlds, missions, lesson texts and tasks
+  boards.js       SVG boards: cannon, lighthouse, unit circle, boss scene
+  play.js         mission screen: lessons, rounds, hearts, feedback
+  map.js          the adventure path
+  results.js      results: stars, XP, streak, unlocks
+  learn.js        Playground diagrams
+  ui.js           screens, dialogs, toasts   motion.js  GSAP helpers
+  fx.js           particles and confetti     background.js  Three.js + symbols
+  storage.js      localStorage (missions, stars, XP, streak, settings)
+  audio.js        Web Audio sounds (no files)  mathfmt.js  KaTeX with text fallback
 test/validate.mjs automated checks
 ```
 
 ## Correctness and testing
 
-Run `npm test` (or `node test/validate.mjs`; Node 18+). It checks:
+Run `npm test` (Node 18+). 21 checks, including thousands of generated rounds:
 
-- every question's correct answer against `Math.sin/cos/tan`, and that **no wrong option is also correct**,
-- 300 generated quizzes per level: 10 unique questions, 4 unique options, exactly one correct, answers shuffled,
-- the quiz engine: scoring only once per question, late clicks, early timeouts, pause/resume, game over, perfect run, 70% edge case.
+- exact values against `Math.sin/cos/tan` for every multiple of 30° and 45°,
+- cannon: the crystal is always on the board, the answer hits, neighbouring answers miss,
+- bay: sides form a real right triangle, exactly one slider value is accepted, the ratio matches the sides, the picture meets the lamp at the answer,
+- boss: every shield has a valid spell, a wrong spell never breaks it,
+- the mission path unlocks one by one, every lesson task is reachable and starts unfinished,
+- storage: streak (same day, next day, gap), stars never go down, damaged saved data is ignored.
 
-All values are exact strings (1/2, √2/2, √3/2, √3/3, √3, Undefined); nothing is rounded in the quiz.
+## Notes
 
-## Edge cases handled
-
-- Double click, click plus timeout, keyboard plus click: only the first one counts (engine state machine).
-- The timer uses `performance.now()` in one animation-frame loop (no drifting intervals). Switching tabs pauses it.
-- If the third heart is lost on the **last** question, the level still counts as completed (7/10 = 70% passes).
-- `localStorage` data is validated on load; if storage is blocked, the game still runs.
-- Respects `prefers-reduced-motion`; the sparkle button in the top bar turns visual effects off. The 3D scene turns itself off on slow devices.
-- Accessible: skip link, keyboard control, visible focus, ARIA live announcements, labelled SVG diagrams.
+- Progress is saved in `localStorage` (key `trigAdventure.v2`) and validated on load; the game also runs when storage is blocked.
+- Respects `prefers-reduced-motion`; the sparkle button turns decorative effects off. The 3D scene disables itself on slow devices.
+- Accessible: skip link, labelled sliders with +/− buttons, ARIA live feedback, focus handling in dialogs, no drag-only interactions.

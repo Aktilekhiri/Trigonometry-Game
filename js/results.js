@@ -1,141 +1,121 @@
 /**
  * results.js
- * Results screen: stars, accuracy, score, mistakes with explanations, replay / next level.
+ * After a mission: stars, XP, streak, what unlocked, and what was practised.
+ * Also the "out of hearts" screen, which is friendly: mistakes are part of learning.
  */
 
-import { LEVEL_INFO } from './questions.js';
-import { recordResult, isLevelUnlocked, TOTAL_LEVELS } from './storage.js';
+import { NODES, WORLDS, nextNode, nodesOfWorld } from './content.js';
+import { completeNode, getStreakCount, getXp } from './storage.js';
 import { showScreen } from './ui.js';
 import { sounds } from './audio.js';
 import { confetti } from './fx.js';
-import { countTo, starsReveal, popIn } from './motion.js';
+import { countTo, popIn, starsReveal } from './motion.js';
 
-const byId = (id) => document.getElementById(id);
+const $ = (id) => document.getElementById(id);
 
-let lastLevel = 1;
+let lastNodeId = null;
 
-function titleFor(summary) {
-  if (!summary.completed) return 'Game Over';
-  if (!summary.passed) return 'Almost there!';
-  if (summary.stars === 3) return 'Perfect!';
-  if (summary.stars === 2) return 'Great job!';
-  return 'Level complete!';
+function banner(text, className) {
+  const item = document.createElement('p');
+  item.className = `result-banner ${className}`;
+  item.textContent = text;
+  return item;
 }
 
-function subtitleFor(summary) {
-  if (!summary.completed) {
-    return `You ran out of hearts after ${summary.answeredCount} of ${summary.total} questions. Read the explanations below, then try again!`;
+function titleFor(node, outcome) {
+  if (!outcome.completed) return 'Out of hearts';
+  if (node.id === NODES[NODES.length - 1].id) return 'Trigonometry master!';
+  if (node.kind === 'lesson') return 'Lesson complete!';
+  if (node.kind === 'boss') return 'Boss defeated!';
+  return outcome.stars === 3 ? 'Flawless!' : 'Mission complete!';
+}
+
+function subtitleFor(node, outcome) {
+  if (!outcome.completed) {
+    return 'No problem: every mistake teaches something. Use the Hint button and the cheat sheet, then try again.';
   }
-  const base = `You answered ${summary.correctCount} of ${summary.total} questions correctly.`;
-  if (!summary.passed) return `${base} You need at least 70% to unlock the next level.`;
-  if (summary.stars < 3) return `${base} Get 9 or more right for 3 stars.`;
-  return `${base} Outstanding work!`;
+  if (node.kind === 'lesson') return 'You are ready to put it into practice.';
+  if (outcome.mistakes === 0) return 'Not a single mistake. Brilliant!';
+  return `You finished with ${outcome.hearts} ${outcome.hearts === 1 ? 'heart' : 'hearts'} left. Finish with more hearts for more stars.`;
 }
 
-function renderMistakes(summary) {
-  const list = byId('mistake-list');
-  list.textContent = '';
+export async function showResults(outcome) {
+  const { node, completed } = outcome;
+  lastNodeId = node.id;
 
-  summary.mistakes.forEach((entry, index) => {
-    const item = document.createElement('li');
-    item.className = 'mistake-item';
+  let record = { firstCompletion: false, streakExtended: false, streakCount: getStreakCount() };
+  if (completed) record = completeNode(node.id, { stars: outcome.stars, xp: outcome.xp });
 
-    const question = document.createElement('p');
-    question.className = 'm-question';
-    question.textContent = `${index + 1}. ${entry.question.prompt}`;
+  $('results-eyebrow').textContent = node.title;
+  $('results-title').textContent = titleFor(node, outcome);
+  $('results-subtitle').textContent = subtitleFor(node, outcome);
+  $('screen-results').classList.toggle('is-failed', !completed);
 
-    const yours = document.createElement('p');
-    yours.className = 'm-yours';
-    yours.textContent = entry.timedOut ? 'You ran out of time.' : `Your answer: ${entry.question.options[entry.chosenIndex].text}`;
+  // Stars (lessons always give 3)
+  const starsBox = $('results-stars');
+  starsBox.hidden = !completed;
+  starsBox.setAttribute('aria-label', `${outcome.stars} of 3 stars`);
+  starsBox.querySelectorAll('.star').forEach((star) => star.classList.remove('is-on'));
 
-    const right = document.createElement('p');
-    right.className = 'm-right';
-    right.textContent = `Correct answer: ${entry.question.correctText}`;
-
-    const why = document.createElement('p');
-    why.className = 'm-why';
-    why.textContent = entry.question.explanation;
-
-    item.append(question, yours, right, why);
-    list.appendChild(item);
-  });
-
-  byId('results-mistakes').hidden = summary.mistakes.length === 0;
-  byId('results-perfect').hidden = summary.mistakes.length !== 0;
-}
-
-export async function showResults({ level, summary }) {
-  lastLevel = level;
-  const info = LEVEL_INFO[level - 1];
-
-  const { isNewBest, unlockedNext } = recordResult(level, {
-    score: summary.score,
-    stars: summary.stars,
-    accuracy: summary.accuracy,
-    passed: summary.passed,
-  });
-  document.dispatchEvent(new CustomEvent('progresschange'));
-
-  byId('results-eyebrow').textContent = `Level ${level} · ${info.name}`;
-  byId('results-title').textContent = titleFor(summary);
-  byId('results-subtitle').textContent = subtitleFor(summary);
-  byId('results-stars').setAttribute('aria-label', `${summary.stars} of 3 stars`);
-
-  const bestBadge = byId('results-best');
-  bestBadge.hidden = !(isNewBest && summary.score > 0);
-
-  const unlockBanner = byId('results-unlock');
-  if (unlockedNext) {
-    unlockBanner.textContent = `Level ${level + 1} unlocked!`;
-    unlockBanner.hidden = false;
-  } else if (summary.passed && level === TOTAL_LEVELS) {
-    unlockBanner.textContent = 'You finished every level. You are a Trigonometry Master!';
-    unlockBanner.hidden = false;
-  } else {
-    unlockBanner.hidden = true;
+  // Banners
+  const banners = $('results-banners');
+  banners.textContent = '';
+  const upcoming = nextNode(node.id);
+  if (completed) {
+    if (record.streakExtended) banners.appendChild(banner(`Day streak: ${record.streakCount} ${record.streakCount === 1 ? 'day' : 'days'}. Come back tomorrow to keep it going!`, 'is-streak'));
+    const worldNodes = nodesOfWorld(node.world);
+    if (record.firstCompletion && worldNodes[worldNodes.length - 1].id === node.id) {
+      const world = WORLDS.find((w) => w.id === node.world);
+      banners.appendChild(banner(`World cleared: ${world.name}!`, 'is-world'));
+    }
+    if (record.firstCompletion && upcoming) banners.appendChild(banner(`Unlocked: ${upcoming.title}`, 'is-unlock'));
   }
+  banners.hidden = !banners.children.length;
 
-  // Stats start at zero and count up once the screen is visible.
-  ['stat-score', 'stat-accuracy', 'stat-correct', 'stat-mistakes'].forEach((id) => {
-    byId(id).textContent = '0';
+  // What was practised
+  const learned = $('results-learned');
+  learned.textContent = '';
+  node.teaches.forEach((text) => {
+    const li = document.createElement('li');
+    li.textContent = text;
+    learned.appendChild(li);
   });
-  renderMistakes(summary);
+  $('results-learned-box').hidden = !completed;
 
-  const nextButton = byId('btn-next-level');
-  nextButton.hidden = !(level < TOTAL_LEVELS && isLevelUnlocked(level + 1));
+  // Stats
+  $('stat-xp-label').textContent = completed ? 'XP earned' : 'XP';
+  ['stat-xp', 'stat-hearts', 'stat-streak', 'stat-total'].forEach((id) => { $(id).textContent = '0'; });
+  $('stat-hearts-box').hidden = node.kind === 'lesson';
+
+  // Buttons
+  const continueButton = $('btn-continue');
+  continueButton.textContent = completed ? (upcoming ? 'Continue' : 'Back to the map') : 'Back to the map';
+  $('btn-replay').textContent = completed ? 'Play again' : 'Try again';
 
   await showScreen('results', { force: true });
 
-  countTo(byId('stat-score'), summary.score, { duration: 1 });
-  countTo(byId('stat-accuracy'), summary.accuracy, { duration: 1, suffix: '%' });
-  countTo(byId('stat-correct'), summary.correctCount, { duration: 0.8 });
-  countTo(byId('stat-mistakes'), summary.wrongCount, { duration: 0.8 });
-  starsReveal([...byId('results-stars').querySelectorAll('.star')], summary.stars);
-  if (!bestBadge.hidden) popIn(bestBadge, 0.5);
-  if (!unlockBanner.hidden) popIn(unlockBanner, 0.8);
-
-  if (!summary.completed) {
-    sounds.gameOver();
-  } else if (summary.passed) {
+  countTo($('stat-xp'), completed ? outcome.xp : 0, { duration: 0.9 });
+  countTo($('stat-hearts'), outcome.hearts, { duration: 0.6 });
+  countTo($('stat-streak'), record.streakCount, { duration: 0.6 });
+  countTo($('stat-total'), getXp(), { duration: 1 });
+  if (completed) {
+    starsReveal([...starsBox.querySelectorAll('.star')], outcome.stars);
+    [...banners.children].forEach((item, i) => popIn(item, 0.5 + i * 0.25));
     sounds.win();
-    confetti(level === TOTAL_LEVELS ? 2 : 1);
-    if (unlockedNext) setTimeout(() => sounds.unlock(), 900);
+    confetti(node.kind === 'boss' ? 2 : 1);
+    if (record.firstCompletion && upcoming) setTimeout(() => sounds.unlock(), 900);
   } else {
-    sounds.timeout();
+    sounds.gameOver();
   }
 }
 
-export function initResults({ onReplay, onNextLevel }) {
-  byId('btn-play-again').addEventListener('click', () => {
+export function initResults({ onReplay }) {
+  $('btn-continue').addEventListener('click', () => {
     sounds.click();
-    onReplay(lastLevel);
+    showScreen('map');
   });
-  byId('btn-next-level').addEventListener('click', () => {
+  $('btn-replay').addEventListener('click', () => {
     sounds.click();
-    onNextLevel(lastLevel + 1);
-  });
-  byId('btn-all-levels').addEventListener('click', () => {
-    sounds.click();
-    showScreen('levels');
+    if (lastNodeId) onReplay(lastNodeId);
   });
 }

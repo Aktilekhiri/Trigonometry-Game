@@ -1,15 +1,16 @@
 /**
  * storage.js
- * Saves unlocked levels, best scores and settings in localStorage.
+ * Saves adventure progress in localStorage: completed missions, stars, XP, day streak, settings.
  * Works even when storage is blocked (private mode): progress then lives in memory only.
  */
 
-const STORAGE_KEY = 'trigAdventure.v1';
-export const TOTAL_LEVELS = 3;
+const STORAGE_KEY = 'trigAdventure.v2';
+const MAX_STARS = 3;
 
 const createDefaults = () => ({
-  unlockedLevel: 1,
-  best: {}, // { "1": { score, stars, accuracy } }
+  xp: 0,
+  streak: { count: 0, lastDay: null },
+  nodes: {}, // { "bay-3": { stars: 2 } }  (presence = completed)
   settings: { sound: true, effects: true },
 });
 
@@ -19,24 +20,39 @@ const clampInteger = (value, min, max, fallback) => {
   return Math.min(max, Math.max(min, Math.round(number)));
 };
 
+/** Local calendar day as YYYY-MM-DD. */
+export function dayKey(date = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function daysBetween(earlierKey, laterKey) {
+  const toUtc = (key) => {
+    const [y, m, d] = key.split('-').map(Number);
+    return Date.UTC(y, m - 1, d);
+  };
+  return Math.round((toUtc(laterKey) - toUtc(earlierKey)) / 86400000);
+}
+
+const isDayKey = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+
 /** Defensive parsing: never trust stored data. */
 function sanitize(raw) {
   const data = createDefaults();
   if (!raw || typeof raw !== 'object') return data;
 
-  data.unlockedLevel = clampInteger(raw.unlockedLevel, 1, TOTAL_LEVELS, 1);
+  data.xp = clampInteger(raw.xp, 0, 1e7, 0);
 
-  if (raw.best && typeof raw.best === 'object') {
-    for (let level = 1; level <= TOTAL_LEVELS; level += 1) {
-      const entry = raw.best[level];
-      if (entry && typeof entry === 'object') {
-        data.best[level] = {
-          score: clampInteger(entry.score, 0, 100, 0),
-          stars: clampInteger(entry.stars, 0, 3, 0),
-          accuracy: clampInteger(entry.accuracy, 0, 100, 0),
-        };
+  if (raw.streak && typeof raw.streak === 'object' && isDayKey(raw.streak.lastDay)) {
+    data.streak = { count: clampInteger(raw.streak.count, 0, 100000, 0), lastDay: raw.streak.lastDay };
+  }
+
+  if (raw.nodes && typeof raw.nodes === 'object') {
+    Object.entries(raw.nodes).forEach(([id, entry]) => {
+      if (/^[a-z]+-\d+$/.test(id) && entry && typeof entry === 'object') {
+        data.nodes[id] = { stars: clampInteger(entry.stars, 0, MAX_STARS, 0) };
       }
-    }
+    });
   }
 
   if (raw.settings && typeof raw.settings === 'object') {
@@ -67,8 +83,10 @@ function persist() {
 }
 
 export const getProgress = () => progress;
-export const isLevelUnlocked = (level) => level <= progress.unlockedLevel;
-export const getBest = (level) => progress.best[level] || null;
+export const getXp = () => progress.xp;
+export const isNodeDone = (id) => Boolean(progress.nodes[id]);
+export const getNodeStars = (id) => (progress.nodes[id] ? progress.nodes[id].stars : 0);
+export const getTotalStars = () => Object.values(progress.nodes).reduce((sum, node) => sum + node.stars, 0);
 export const getSetting = (name) => progress.settings[name];
 
 export function setSetting(name, value) {
@@ -76,27 +94,35 @@ export function setSetting(name, value) {
   persist();
 }
 
+/** Streak shown to the player: it breaks if no mission was completed yesterday or today. */
+export function getStreakCount(now = new Date()) {
+  const { count, lastDay } = progress.streak;
+  if (!lastDay) return 0;
+  return daysBetween(lastDay, dayKey(now)) <= 1 ? count : 0;
+}
+
 /**
- * Stores a finished level.
- * @returns {{isNewBest: boolean, unlockedNext: boolean}}
+ * Stores a completed mission.
+ * Stars never go down (the best result is kept); XP is awarded every time.
  */
-export function recordResult(level, { score, stars, accuracy, passed }) {
-  const previous = progress.best[level];
-  const isNewBest = !previous || score > previous.score;
+export function completeNode(id, { stars = 0, xp = 0 }, now = new Date()) {
+  const firstCompletion = !progress.nodes[id];
+  const previousStars = progress.nodes[id] ? progress.nodes[id].stars : 0;
+  progress.nodes[id] = { stars: Math.max(previousStars, clampInteger(stars, 0, MAX_STARS, 0)) };
 
-  if (isNewBest) {
-    progress.best[level] = { score, stars, accuracy };
-  } else if (stars > previous.stars) {
-    previous.stars = stars; // keep the best star rating even when the score is lower
+  progress.xp += clampInteger(xp, 0, 10000, 0);
+
+  const today = dayKey(now);
+  const { lastDay } = progress.streak;
+  let streakExtended = false;
+  if (lastDay !== today) {
+    const gap = lastDay ? daysBetween(lastDay, today) : Infinity;
+    progress.streak = { count: gap === 1 ? progress.streak.count + 1 : 1, lastDay: today };
+    streakExtended = true;
   }
 
-  let unlockedNext = false;
-  if (passed && level < TOTAL_LEVELS && progress.unlockedLevel < level + 1) {
-    progress.unlockedLevel = level + 1;
-    unlockedNext = true;
-  }
   persist();
-  return { isNewBest, unlockedNext };
+  return { firstCompletion, streakExtended, streakCount: progress.streak.count };
 }
 
 export function resetProgress() {
