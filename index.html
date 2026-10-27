@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trigonometry Adventure</title>
+    <meta
+      name="description"
+      content="Trigonometry Adventure is an interactive arcade game that teaches sine, cosine, tangent and the unit circle."
+    />
+    <meta name="theme-color" content="#0a0a24" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230a0a24' stroke='%2322e4ff' stroke-width='2'/%3E%3Cpath d='M5 16q5.5-10 11 0t11 0' fill='none' stroke='%23ff4fd8' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E" />
+
+    <!-- Fonts (Google Fonts) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- KaTeX for fractions and roots. The game still works (in plain text) if this fails to load. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- GSAP and KaTeX load before script.js (deferred scripts run in order). Three.js is imported on demand. -->
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script type="module" src="script.js"></script>
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <!-- Reusable icons -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
+      <defs>
+        <symbol id="icon-heart" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></symbol>
+        <symbol id="icon-star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" /></symbol>
+        <symbol id="icon-volume-on" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" /></symbol>
+        <symbol id="icon-volume-off" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" /></symbol>
+        <symbol id="icon-sparkles" viewBox="0 0 24 24"><path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2zm7 11l.9 2.6 2.6.9-2.6.9L19 20l-.9-2.6-2.6-.9 2.6-.9L19 13zM5 14l.7 2.3 2.3.7-2.3.7L5 20l-.7-2.3L2 17l2.3-.7L5 14z" /></symbol>
+        <symbol id="icon-back" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" /></symbol>
+        <symbol id="icon-lock" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" /></symbol>
+        <symbol id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></symbol>
+        <symbol id="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></symbol>
+        <symbol id="icon-close" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></symbol>
+        <symbol id="icon-clock" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm.5 5v5.25l4.5 2.67-.75 1.23L11 13V7h1.5z" /></symbol>
+      </defs>
+    </svg>
+
+    <!-- Animated background -->
+    <div class="bg-layer" aria-hidden="true">
+      <div class="bg-gradient"></div>
+      <div class="bg-grid"></div>
+      <div class="bg-blob blob-1"></div>
+      <div class="bg-blob blob-2"></div>
+      <div class="bg-blob blob-3"></div>
+      <canvas id="bg-canvas"></canvas>
+      <div id="symbol-field"></div>
+    </div>
+    <canvas id="fx-canvas" aria-hidden="true"></canvas>
+
+    <header class="topbar">
+      <button class="brand" id="brand-home" type="button" aria-label="Trigonometry Adventure, go to the home screen">
+        <svg class="brand-logo" viewBox="0 0 32 32" aria-hidden="true">
+          <circle cx="16" cy="16" r="14" fill="none" stroke="url(#logo-gradient)" stroke-width="2" />
+          <path d="M5 16q5.5-10 11 0t11 0" fill="none" stroke="#ff4fd8" stroke-width="2.4" stroke-linecap="round" />
+          <defs>
+            <linearGradient id="logo-gradient" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#22e4ff" />
+              <stop offset="1" stop-color="#9b6bff" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="brand-text">Trig Adventure</span>
+      </button>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="toggle-sound" type="button" aria-pressed="true" aria-label="Sound effects: on" title="Sound on/off">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-volume-on" id="sound-icon" /></svg>
+        </button>
+        <button class="icon-btn" id="toggle-effects" type="button" aria-pressed="true" aria-label="Visual effects: on" title="Visual effects on/off">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-sparkles" /></svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <!-- 1. WELCOME ------------------------------------------------------ -->
+      <section class="screen" id="screen-welcome" aria-labelledby="welcome-title">
+        <div class="welcome-grid">
+          <div class="welcome-copy">
+            <p class="eyebrow" data-animate>Interactive math arcade</p>
+            <h1 id="welcome-title" tabindex="-1" data-animate>
+              <span class="title-line">TRIGONOMETRY</span>
+              <span class="title-line title-gradient">ADVENTURE</span>
+            </h1>
+            <p class="lead" data-animate>
+              Master sine, cosine and tangent. Explore the unit circle, beat the clock and collect stars across three levels.
+            </p>
+            <div class="button-row" data-animate>
+              <button class="btn btn-primary btn-lg" id="btn-start" type="button">Start Game</button>
+              <button class="btn btn-secondary btn-lg" id="btn-learn" type="button">Learn Trigonometry</button>
+              <button class="btn btn-ghost btn-lg" id="btn-howto" type="button">How to Play</button>
+            </div>
+            <ul class="chip-row" data-animate aria-label="Game facts">
+              <li class="chip">3 levels</li>
+              <li class="chip">10 questions each</li>
+              <li class="chip">20 seconds per question</li>
+              <li class="chip">3 hearts</li>
+            </ul>
+            <p class="welcome-progress" id="welcome-progress" data-animate></p>
+          </div>
+
+          <div class="welcome-art" aria-hidden="true" data-animate>
+            <svg class="hero-circle" viewBox="0 0 400 400">
+              <defs>
+                <linearGradient id="hero-ring" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#22e4ff" />
+                  <stop offset="0.5" stop-color="#9b6bff" />
+                  <stop offset="1" stop-color="#ff4fd8" />
+                </linearGradient>
+                <filter id="hero-glow" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="5" result="blur" />
+                  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+              </defs>
+              <g class="hero-spin" id="hero-spin">
+                <circle cx="200" cy="200" r="168" fill="none" stroke="url(#hero-ring)" stroke-width="3" stroke-dasharray="2 10" stroke-linecap="round" opacity="0.7" />
+              </g>
+              <circle cx="200" cy="200" r="130" fill="rgba(255,255,255,0.03)" stroke="url(#hero-ring)" stroke-width="3" filter="url(#hero-glow)" />
+              <line x1="40" y1="200" x2="360" y2="200" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" />
+              <line x1="200" y1="40" x2="200" y2="360" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" />
+              <g id="hero-orbit">
+                <line id="hero-radius" x1="200" y1="200" x2="330" y2="200" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+                <line id="hero-cos" x1="200" y1="200" x2="330" y2="200" stroke="#22e4ff" stroke-width="4" stroke-linecap="round" />
+                <line id="hero-sin" x1="200" y1="200" x2="200" y2="200" stroke="#ff4fd8" stroke-width="4" stroke-linecap="round" />
+                <circle id="hero-dot" cx="330" cy="200" r="9" fill="#ffffff" filter="url(#hero-glow)" />
+              </g>
+              <circle cx="200" cy="200" r="5" fill="#ffffff" />
+            </svg>
+            <div class="float-card float-card-1 glass"><span>sin 30°</span><strong>= 1/2</strong></div>
+            <div class="float-card float-card-2 glass"><span>cos 45°</span><strong>= √2/2</strong></div>
+            <div class="float-card float-card-3 glass"><span>tan 60°</span><strong>= √3</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. LEARN -------------------------------------------------------- -->
+      <section class="screen" id="screen-learn" hidden aria-labelledby="learn-title">
+        <div class="screen-head" data-animate>
+          <button class="btn btn-ghost back-btn" type="button" data-nav="welcome">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-back" /></svg> Back
+          </button>
+          <div>
+            <h2 id="learn-title" tabindex="-1">Learn Trigonometry</h2>
+            <p class="lead small">Play with the diagrams. Everything here moves, so try it!</p>
+          </div>
+          <button class="btn btn-primary" type="button" data-nav="levels">Play now</button>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="Lessons" data-animate>
+          <button class="tab" role="tab" id="tab-triangle" aria-controls="panel-triangle" aria-selected="true" type="button">1. Right triangle</button>
+          <button class="tab" role="tab" id="tab-soh" aria-controls="panel-soh" aria-selected="false" tabindex="-1" type="button">2. SOH CAH TOA</button>
+          <button class="tab" role="tab" id="tab-circle" aria-controls="panel-circle" aria-selected="false" tabindex="-1" type="button">3. Unit circle</button>
+          <button class="tab" role="tab" id="tab-table" aria-controls="panel-table" aria-selected="false" tabindex="-1" type="button">4. Special angles</button>
+        </div>
+
+        <!-- Right triangle -->
+        <div class="tab-panel glass" role="tabpanel" id="panel-triangle" aria-labelledby="tab-triangle">
+          <div class="lesson-grid">
+            <div class="diagram-box">
+              <svg id="triangle-svg" viewBox="0 0 480 310" role="img" aria-labelledby="triangle-title triangle-desc">
+                <title id="triangle-title">Interactive right triangle</title>
+                <desc id="triangle-desc">A right triangle whose angle theta changes with the slider. The sides are labelled opposite, adjacent and hypotenuse.</desc>
+              </svg>
+            </div>
+            <div class="lesson-text">
+              <h3>Meet the right triangle</h3>
+              <p>
+                A right triangle has one 90° corner. Pick one of the other two corners and call its angle
+                <strong>θ</strong> (theta). The three sides now get names <em>relative to θ</em>:
+              </p>
+              <ul class="legend">
+                <li><span class="swatch swatch-opposite"></span><strong>Opposite</strong>: across from θ</li>
+                <li><span class="swatch swatch-adjacent"></span><strong>Adjacent</strong>: next to θ (not the longest side)</li>
+                <li><span class="swatch swatch-hypotenuse"></span><strong>Hypotenuse</strong>: the longest side, across from 90°</li>
+              </ul>
+              <div class="slider-field">
+                <label for="triangle-angle">Angle θ: <output id="triangle-angle-output" for="triangle-angle">35°</output></label>
+                <input id="triangle-angle" type="range" min="15" max="75" step="1" value="35" />
+              </div>
+              <div class="ratio-grid" aria-live="off">
+                <div class="ratio-card ratio-sin"><span class="ratio-name">sin θ</span><span class="ratio-formula">opposite ÷ hypotenuse</span><strong id="triangle-sin">0.574</strong></div>
+                <div class="ratio-card ratio-cos"><span class="ratio-name">cos θ</span><span class="ratio-formula">adjacent ÷ hypotenuse</span><strong id="triangle-cos">0.819</strong></div>
+                <div class="ratio-card ratio-tan"><span class="ratio-name">tan θ</span><span class="ratio-formula">opposite ÷ adjacent</span><strong id="triangle-tan">0.700</strong></div>
+              </div>
+              <p class="hint" id="triangle-note">Slide θ and watch the ratios change. They only depend on the angle, never on the size of the triangle.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- SOH CAH TOA -->
+        <div class="tab-panel glass" role="tabpanel" id="panel-soh" aria-labelledby="tab-soh" hidden>
+          <div class="lesson-grid">
+            <div class="diagram-box">
+              <svg id="soh-svg" viewBox="0 0 480 310" role="img" aria-labelledby="soh-title soh-desc">
+                <title id="soh-title">Triangle highlighting the sides used by sine, cosine or tangent</title>
+                <desc id="soh-desc">The two sides used by the selected ratio glow. Choose SOH, CAH or TOA to change the highlight.</desc>
+              </svg>
+            </div>
+            <div class="lesson-text">
+              <h3>SOH CAH TOA</h3>
+              <p>A memory trick for the three main ratios. Choose one to see which sides it uses:</p>
+              <div class="soh-buttons" role="group" aria-label="Choose a ratio">
+                <button class="soh-btn" type="button" data-ratio="sin" aria-pressed="true"><strong>SOH</strong><span>Sine = Opposite ÷ Hypotenuse</span></button>
+                <button class="soh-btn" type="button" data-ratio="cos" aria-pressed="false"><strong>CAH</strong><span>Cosine = Adjacent ÷ Hypotenuse</span></button>
+                <button class="soh-btn" type="button" data-ratio="tan" aria-pressed="false"><strong>TOA</strong><span>Tangent = Opposite ÷ Adjacent</span></button>
+              </div>
+              <div class="formula-box" id="soh-formula" aria-live="polite"></div>
+              <p class="hint" id="soh-explanation"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Unit circle -->
+        <div class="tab-panel glass" role="tabpanel" id="panel-circle" aria-labelledby="tab-circle" hidden>
+          <div class="circle-layout">
+            <div class="diagram-box">
+              <svg id="circle-svg" viewBox="0 0 400 400" role="img" aria-labelledby="circle-title circle-desc">
+                <title id="circle-title">Interactive unit circle</title>
+                <desc id="circle-desc">A circle of radius 1. The turning radius ends at the point cos theta, sin theta. The cosine is the horizontal distance and the sine is the vertical distance.</desc>
+              </svg>
+            </div>
+            <div class="lesson-text">
+              <h3>The unit circle</h3>
+              <p>
+                A circle with radius 1. Turn the radius by an angle θ. The point where it lands is
+                <strong>(cos θ, sin θ)</strong>: <span class="text-cyan">cosine</span> is how far right,
+                <span class="text-pink">sine</span> is how far up.
+              </p>
+              <div class="slider-field">
+                <label for="circle-angle">Angle θ: <output id="circle-angle-output" for="circle-angle">45°</output></label>
+                <input id="circle-angle" type="range" min="0" max="360" step="1" value="45" />
+              </div>
+              <div class="button-row tight">
+                <button class="btn btn-secondary" id="circle-play" type="button" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-play" id="circle-play-icon" /></svg>
+                  <span id="circle-play-label">Auto-rotate</span>
+                </button>
+              </div>
+              <div class="snap-row" id="circle-snaps" role="group" aria-label="Jump to a special angle"></div>
+              <div class="readout-grid" id="circle-readout">
+                <div class="readout"><span>Angle</span><strong id="readout-angle">45° = π/4</strong></div>
+                <div class="readout"><span>Quadrant</span><strong id="readout-quadrant">I</strong></div>
+                <div class="readout readout-cos"><span>cos θ (x)</span><strong id="readout-cos">0.707</strong></div>
+                <div class="readout readout-sin"><span>sin θ (y)</span><strong id="readout-sin">0.707</strong></div>
+                <div class="readout readout-tan"><span>tan θ</span><strong id="readout-tan">1.000</strong></div>
+                <div class="readout"><span>Exact values</span><strong id="readout-exact">√2/2, √2/2</strong></div>
+              </div>
+            </div>
+          </div>
+          <div class="wave-box">
+            <svg id="wave-svg" viewBox="0 0 400 170" role="img" aria-labelledby="wave-title wave-desc">
+              <title id="wave-title">Sine and cosine waves</title>
+              <desc id="wave-desc">The pink curve is sine and the cyan curve is cosine. Markers follow the angle chosen on the unit circle.</desc>
+            </svg>
+            <p class="hint">The pink wave is sine, the cyan wave is cosine. The markers follow your angle.</p>
+          </div>
+        </div>
+
+        <!-- Special angles -->
+        <div class="tab-panel glass" role="tabpanel" id="panel-table" aria-labelledby="tab-table" hidden>
+          <h3>Special angles: the values to remember</h3>
+          <p>These exact values show up everywhere. Select a row to see it on the unit circle.</p>
+          <div class="table-wrap">
+            <table class="values-table" id="values-table">
+              <caption class="sr-only">Exact values of sine, cosine and tangent for special angles</caption>
+              <thead>
+                <tr><th scope="col">Angle</th><th scope="col">sin</th><th scope="col">cos</th><th scope="col">tan</th><th scope="col"><span class="sr-only">Action</span></th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="trick-grid">
+            <div class="trick-card">
+              <h4>Sine trick</h4>
+              <p>Count 0, 1, 2, 3, 4 and write √ over 2:</p>
+              <p class="trick-line" id="trick-sin"></p>
+            </div>
+            <div class="trick-card">
+              <h4>Cosine trick</h4>
+              <p>The same list, backwards:</p>
+              <p class="trick-line" id="trick-cos"></p>
+            </div>
+            <div class="trick-card">
+              <h4>Tangent trick</h4>
+              <p>tan θ = sin θ ÷ cos θ. At 90° cosine is 0, so tangent is <strong>undefined</strong>.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. LEVEL SELECT ------------------------------------------------- -->
+      <section class="screen" id="screen-levels" hidden aria-labelledby="levels-title">
+        <div class="screen-head" data-animate>
+          <button class="btn btn-ghost back-btn" type="button" data-nav="welcome">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-back" /></svg> Back
+          </button>
+          <div>
+            <h2 id="levels-title" tabindex="-1">Choose your level</h2>
+            <p class="lead small">Finish a level with at least 70% correct answers to unlock the next one.</p>
+          </div>
+          <button class="btn btn-secondary" type="button" data-nav="learn">Learn first</button>
+        </div>
+        <div class="level-grid" id="level-grid"></div>
+        <div class="levels-footer" data-animate>
+          <p id="levels-summary" class="hint"></p>
+          <button class="btn btn-ghost" id="btn-reset" type="button">Reset progress</button>
+        </div>
+      </section>
+
+      <!-- 4. GAME --------------------------------------------------------- -->
+      <section class="screen" id="screen-game" hidden aria-labelledby="game-title">
+        <h2 id="game-title" class="sr-only" tabindex="-1">Quiz</h2>
+        <div class="hud glass">
+          <button class="btn btn-ghost btn-sm" id="btn-pause" type="button">Pause</button>
+          <div class="hud-block hud-level"><span class="hud-label">Level</span><strong id="hud-level">1 · Easy</strong></div>
+          <div class="hud-block"><span class="hud-label">Score</span><strong id="hud-score" class="hud-score">0</strong><span class="score-popup-anchor" id="score-popup-anchor"></span></div>
+          <div class="hud-block">
+            <span class="hud-label">Hearts</span>
+            <div class="hearts" id="hud-hearts" role="img" aria-label="3 hearts left">
+              <svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-heart" /></svg>
+              <svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-heart" /></svg>
+              <svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-heart" /></svg>
+            </div>
+          </div>
+          <div class="timer" id="hud-timer" aria-hidden="true">
+            <svg viewBox="0 0 64 64">
+              <circle class="timer-track" cx="32" cy="32" r="27" />
+              <circle class="timer-fill" id="timer-fill" cx="32" cy="32" r="27" />
+            </svg>
+            <span class="timer-number" id="timer-number">20</span>
+          </div>
+        </div>
+
+        <div class="progress">
+          <div class="progress-label">
+            <span id="progress-text">Question 1 of 10</span>
+            <span class="chip chip-small" id="question-topic">Special angles</span>
+          </div>
+          <div class="progress-track" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="question-card glass glow-border" id="question-card">
+          <h3 class="question-text" id="question-text" tabindex="-1"></h3>
+        </div>
+
+        <div class="answers" id="answers" role="group" aria-labelledby="question-text"></div>
+
+        <div class="feedback glass" id="feedback" hidden>
+          <div class="feedback-icon" id="feedback-icon" aria-hidden="true"></div>
+          <div class="feedback-body">
+            <p class="feedback-title" id="feedback-title"></p>
+            <p class="feedback-answer" id="feedback-answer"></p>
+            <p class="feedback-explanation" id="feedback-explanation"></p>
+          </div>
+          <button class="btn btn-primary" id="btn-next" type="button">Next question</button>
+        </div>
+        <p class="keys-hint" aria-hidden="true">Keyboard: press 1–4 to answer, Enter for the next question.</p>
+      </section>
+
+      <!-- 5. RESULTS ------------------------------------------------------ -->
+      <section class="screen" id="screen-results" hidden aria-labelledby="results-title">
+        <div class="results-card glass glow-border">
+          <p class="eyebrow" id="results-eyebrow">Level 1 complete</p>
+          <h2 id="results-title" tabindex="-1">Great job!</h2>
+          <p class="lead small" id="results-subtitle"></p>
+
+          <div class="stars" id="results-stars" role="img" aria-label="0 of 3 stars">
+            <svg class="star" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-star" /></svg>
+            <svg class="star" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-star" /></svg>
+            <svg class="star" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-star" /></svg>
+          </div>
+
+          <p class="badge-new" id="results-best" hidden>New best score!</p>
+          <p class="unlock-banner" id="results-unlock" hidden></p>
+
+          <div class="stat-grid">
+            <div class="stat"><span>Score</span><strong id="stat-score">0</strong></div>
+            <div class="stat"><span>Accuracy</span><strong id="stat-accuracy">0%</strong></div>
+            <div class="stat"><span>Correct</span><strong id="stat-correct">0</strong></div>
+            <div class="stat"><span>Mistakes</span><strong id="stat-mistakes">0</strong></div>
+          </div>
+
+          <div class="mistakes" id="results-mistakes" hidden>
+            <h3>Review your mistakes</h3>
+            <ol class="mistake-list" id="mistake-list"></ol>
+          </div>
+          <p class="perfect-note" id="results-perfect" hidden>No mistakes to review. Perfect run!</p>
+
+          <div class="button-row center">
+            <button class="btn btn-primary btn-lg" id="btn-play-again" type="button">Play again</button>
+            <button class="btn btn-secondary btn-lg" id="btn-next-level" type="button">Next level</button>
+            <button class="btn btn-ghost btn-lg" id="btn-all-levels" type="button">All levels</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Dialogs -->
+    <dialog id="dialog-howto" aria-labelledby="howto-title">
+      <div class="dialog-card glass">
+        <h2 id="howto-title">How to play</h2>
+        <ol class="howto-list">
+          <li><strong>Pick a level.</strong> Each level has 10 questions with 4 answers. Only one is correct.</li>
+          <li><strong>Beat the clock.</strong> You have 20 seconds per question.</li>
+          <li><strong>Protect your hearts.</strong> A wrong answer or running out of time costs 1 of your 3 hearts. At 0 hearts the game is over.</li>
+          <li><strong>Score points.</strong> Each correct answer is worth +10. After every question you get a short explanation.</li>
+          <li><strong>Unlock levels.</strong> Finish with at least 70% correct to open the next level. 90% earns 3 stars.</li>
+          <li><strong>Need help?</strong> Open <em>Learn Trigonometry</em> for interactive lessons.</li>
+        </ol>
+        <p class="hint">Keyboard: 1–4 choose an answer, Enter goes to the next question, Esc closes a dialog.</p>
+        <div class="button-row">
+          <button class="btn btn-primary" type="button" data-close-dialog>Got it</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="dialog-pause" aria-labelledby="pause-title">
+      <div class="dialog-card glass">
+        <h2 id="pause-title">Game paused</h2>
+        <p>The timer is stopped. Your score and hearts are safe until you leave.</p>
+        <div class="button-row stack">
+          <button class="btn btn-primary" id="pause-resume" type="button">Resume</button>
+          <button class="btn btn-secondary" id="pause-restart" type="button">Restart level</button>
+          <button class="btn btn-danger" id="pause-quit" type="button">Quit to levels</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="dialog-reset" aria-labelledby="reset-title">
+      <div class="dialog-card glass">
+        <h2 id="reset-title">Reset all progress?</h2>
+        <p>This locks Levels 2 and 3 again and deletes your best scores and stars. This cannot be undone.</p>
+        <div class="button-row">
+          <button class="btn btn-secondary" id="reset-cancel" type="button">Keep my progress</button>
+          <button class="btn btn-danger" id="reset-confirm" type="button">Reset progress</button>
+        </div>
+      </div>
+    </dialog>
+
+    <div class="toast-region" id="toast-region" role="status" aria-live="polite"></div>
+    <div class="sr-only" id="sr-announcer" aria-live="assertive"></div>
+  </body>
+</html>

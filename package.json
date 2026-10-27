@@ -1,0 +1,10 @@
+{
+  "name": "trigonometry-adventure",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TRIGONOMETRY ADVENTURE - an educational browser game (no build step required).",
+  "scripts": {
+    "test": "node test/validate.mjs"
+  }
+}
